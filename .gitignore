@@ -1,0 +1,67 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+.tmp/
+
+# Logs
+*.log
+logs/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Kubernetes secrets (if any)
+secrets/
+*.secret
+
+# Local development overrides
+docker-compose.override.yml
+local-values.yaml
+
+# Function builds and artifacts
+*.zip
+*.tar.gz
+functions/*/build/
+
+# IDE and editor specific
+.cursor/
+.vscode/settings.json 

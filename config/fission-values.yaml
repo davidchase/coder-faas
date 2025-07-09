@@ -1,0 +1,115 @@
+# Fission Helm Chart Values
+# Optimized for local development with Kind
+
+# Global configuration
+global:
+  # Enable service monitor for metrics (optional)
+  serviceMonitor:
+    enabled: false
+
+# Fission core components
+fission-core:
+  # Controller configuration
+  controller:
+    image:
+      repository: fission/fission-bundle
+      tag: v1.20.5
+    # Resource limits for development
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  # Router configuration
+  router:
+    image:
+      repository: fission/fission-bundle
+      tag: v1.20.5
+    # Service type for local access
+    serviceType: NodePort
+    # Resource limits
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  # Executor configuration
+  executor:
+    image:
+      repository: fission/fission-bundle
+      tag: v1.20.5
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  # Webhook configuration
+  webhook:
+    image:
+      repository: fission/fission-bundle
+      tag: v1.20.5
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  # Storage service configuration
+  storageServiceType: NodePort
+
+  # Build manager configuration
+  buildermgr:
+    image:
+      repository: fission/fission-bundle
+      tag: v1.20.5
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# Environment images for different runtimes
+environments:
+  # Node.js environment
+  - name: nodejs
+    image: fission/node-env:latest
+    builder: fission/node-builder:latest
+  
+  # Python environment  
+  - name: python
+    image: fission/python-env:latest
+    builder: fission/python-builder:latest
+  
+  # Go environment
+  - name: go
+    image: fission/go-env:latest
+    builder: fission/go-builder:latest
+
+# Persistent volume configuration for local development
+persistence:
+  enabled: true
+  storageClass: standard
+  size: 8Gi
+
+# Analytics disabled for privacy
+analytics:
+  enabled: false
+
+# Pruner configuration for cleanup
+pruner:
+  enabled: true
+  # Clean up every hour in development
+  interval: 60 
