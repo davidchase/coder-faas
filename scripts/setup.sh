@@ -153,13 +153,15 @@ configure_faas_namespace() {
     # Apply RBAC configuration for faas namespace
     kubectl apply -f manifests/faas-namespace-rbac.yaml
     
-    # Patch router and executor to watch faas namespace
+    # Patch router, executor, and buildermgr to watch faas namespace
     kubectl patch deployment router -n "$NAMESPACE" -p '{"spec":{"template":{"spec":{"containers":[{"name":"router","env":[{"name":"FISSION_RESOURCE_NAMESPACES","value":"default,faas"}]}]}}}}'
     kubectl patch deployment executor -n "$NAMESPACE" -p '{"spec":{"template":{"spec":{"containers":[{"name":"executor","env":[{"name":"FISSION_RESOURCE_NAMESPACES","value":"default,faas"}]}]}}}}'
+    kubectl patch deployment buildermgr -n "$NAMESPACE" -p '{"spec":{"template":{"spec":{"containers":[{"name":"buildermgr","env":[{"name":"FISSION_RESOURCE_NAMESPACES","value":"default,faas"}]}]}}}}'
     
     # Wait for deployments to restart
     kubectl rollout status deployment/router -n "$NAMESPACE" --timeout=120s
     kubectl rollout status deployment/executor -n "$NAMESPACE" --timeout=120s
+    kubectl rollout status deployment/buildermgr -n "$NAMESPACE" --timeout=120s
     
     log_success "faas namespace configured successfully!"
 }

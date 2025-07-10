@@ -142,4 +142,49 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: fission-fetcher
+  namespace: faas
+
+---
+# Create fission-builder service account in faas namespace
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fission-builder
+  namespace: faas
+  labels:
+    svc: fission-builder
+
+---
+# Create ClusterRole for fission-builder
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fission-builder-faas
+rules:
+# Core Kubernetes resources needed by builder
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch", "create", "patch"]
+
+# Fission CRDs - builder needs to access packages and environments
+- apiGroups: ["fission.io"]
+  resources: ["packages", "functions", "environments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# Bind fission-builder ClusterRole to fission-builder service account in faas namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fission-builder-faas-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fission-builder-faas
+subjects:
+- kind: ServiceAccount
+  name: fission-builder
   namespace: faas 
