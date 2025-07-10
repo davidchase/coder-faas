@@ -7,7 +7,7 @@ help:
 	@echo "🚀 Fission + Coder Development Environment"
 	@echo "==========================================="
 	@echo ""
-	@echo "Available commands:"
+	@echo "🏗️ Environment Management:"
 	@echo "  setup           - Complete environment setup (new installation)"
 	@echo "  deploy-existing - Deploy Coder to existing Fission cluster"
 	@echo "  start-access    - Start port forwarding to access Coder"
@@ -17,6 +17,15 @@ help:
 	@echo "  cleanup         - Clean up environment"
 	@echo "  test-setup      - Test if setup is working"
 	@echo "  clean           - Full cleanup (delete cluster)"
+	@echo ""
+	@echo "⚡ Function Management (Isolated):"
+	@echo "  create-function NAME=<name> CODE=<file> [TYPE=poolmgr|newdeploy]"
+	@echo "  test-function NAME=<name>     - Test a specific function"
+	@echo "  list-functions                - List all coder-faas functions"
+	@echo "  function-status               - Show detailed function status"
+	@echo "  function-logs NAME=<name>     - Show function logs"
+	@echo "  delete-function NAME=<name>   - Delete a specific function"
+	@echo "  cleanup-functions             - Delete all coder-faas functions"
 	@echo ""
 
 # Complete setup for new environment
@@ -106,4 +115,53 @@ start-access:
 
 stop-access:
 	@echo "🛑 Stopping Coder access..."
-	./scripts/stop-portforward.sh 
+	./scripts/stop-portforward.sh
+
+# Function management with proper namespace isolation
+create-function:
+	@echo "🔧 Usage: make create-function NAME=hello CODE=functions/hello.js [TYPE=poolmgr|newdeploy]"
+	@if [ -z "$(NAME)" ] || [ -z "$(CODE)" ]; then \
+		echo "Error: NAME and CODE parameters are required"; \
+		echo "Example: make create-function NAME=hello CODE=functions/hello.js"; \
+		exit 1; \
+	fi
+	./scripts/create-function.sh $(NAME) $(CODE) $(TYPE)
+
+test-function:
+	@echo "🧪 Usage: make test-function NAME=hello"
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME parameter is required"; \
+		echo "Example: make test-function NAME=hello"; \
+		exit 1; \
+	fi
+	./scripts/manage-functions.sh test $(NAME)
+
+list-functions:
+	@echo "📋 Listing coder-faas functions..."
+	./scripts/manage-functions.sh list
+
+function-status:
+	@echo "📊 Checking function status..."
+	./scripts/manage-functions.sh status
+
+function-logs:
+	@echo "📝 Usage: make function-logs NAME=hello"
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME parameter is required"; \
+		echo "Example: make function-logs NAME=hello"; \
+		exit 1; \
+	fi
+	./scripts/manage-functions.sh logs $(NAME)
+
+delete-function:
+	@echo "🗑️ Usage: make delete-function NAME=hello"
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME parameter is required"; \
+		echo "Example: make delete-function NAME=hello"; \
+		exit 1; \
+	fi
+	./scripts/manage-functions.sh delete $(NAME)
+
+cleanup-functions:
+	@echo "🧹 Cleaning up all coder-faas functions..."
+	./scripts/manage-functions.sh cleanup 

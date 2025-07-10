@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Fission + Coder Development Environment Setup Script
-# This script sets up a complete serverless development environment
+# This script sets up a complete serverless development environment with faas namespace
 
 set -e
 
@@ -13,8 +13,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-CLUSTER_NAME="fission-dev"
+CLUSTER_NAME="kind-coder-faaas"
 NAMESPACE="fission"
+FAAS_NAMESPACE="faas"
 CODER_PORT="31315"
 
 # Helper functions
@@ -115,8 +116,9 @@ install_fission() {
     helm repo add fission-charts https://fission.github.io/fission-charts/
     helm repo update
     
-    # Create namespace if it doesn't exist
+    # Create namespaces
     kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace "$FAAS_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
     
     # Check if Fission is already installed
     if helm list -n "$NAMESPACE" | grep -q fission; then
@@ -124,14 +126,13 @@ install_fission() {
         read -p "Do you want to upgrade it? (y/N): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            helm upgrade fission fission-charts/fission-all -n "$NAMESPACE" -f config/fission-values.yaml
+            helm upgrade fission fission-charts/fission-all -n "$NAMESPACE"
         else
             log_info "Skipping Fission installation."
-            return
         fi
     else
-        # Install Fission
-        helm install fission fission-charts/fission-all -n "$NAMESPACE" -f config/fission-values.yaml
+        # Install Fission with default values
+        helm install fission fission-charts/fission-all -n "$NAMESPACE"
     fi
     
     # Wait for Fission components to be ready
@@ -143,6 +144,24 @@ install_fission() {
     kubectl wait --for=condition=available --timeout=300s deployment/storagesvc -n "$NAMESPACE"
     
     log_success "Fission installed successfully!"
+}
+
+# Configure faas namespace
+configure_faas_namespace() {
+    log_info "Configuring faas namespace for multi-namespace support..."
+    
+    # Apply RBAC configuration for faas namespace
+    kubectl apply -f manifests/faas-namespace-rbac.yaml
+    
+    # Patch router and executor to watch faas namespace
+    kubectl patch deployment router -n "$NAMESPACE" -p '{"spec":{"template":{"spec":{"containers":[{"name":"router","env":[{"name":"FISSION_RESOURCE_NAMESPACES","value":"default,faas"}]}]}}}}'
+    kubectl patch deployment executor -n "$NAMESPACE" -p '{"spec":{"template":{"spec":{"containers":[{"name":"executor","env":[{"name":"FISSION_RESOURCE_NAMESPACES","value":"default,faas"}]}]}}}}'
+    
+    # Wait for deployments to restart
+    kubectl rollout status deployment/router -n "$NAMESPACE" --timeout=120s
+    kubectl rollout status deployment/executor -n "$NAMESPACE" --timeout=120s
+    
+    log_success "faas namespace configured successfully!"
 }
 
 # Deploy Coder server
@@ -159,73 +178,86 @@ deploy_coder() {
     log_success "Coder code-server deployed successfully!"
 }
 
-# Create sample functions
-create_samples() {
-    log_info "Creating sample functions..."
+# Create sample functions in faas namespace
+create_sample_functions() {
+    log_info "Setting up sample functions in faas namespace..."
     
-    # Create functions directory
-    mkdir -p functions/examples
+    # Wait a bit for everything to be ready
+    sleep 10
     
-    # Node.js function
-    cat > functions/examples/hello-node.js << 'EOF'
-module.exports = async function(context) {
-    return {
-        status: 200,
-        body: {
-            message: "Hello from Node.js!",
-            timestamp: new Date().toISOString(),
-            headers: context.request.headers
-        }
-    };
-}
+    # Create Node.js environment in faas namespace
+    if ! kubectl get environment nodejs -n "$FAAS_NAMESPACE" &>/dev/null; then
+        log_info "Creating Node.js environment in faas namespace..."
+        kubectl apply -f - <<EOF
+apiVersion: fission.io/v1
+kind: Environment
+metadata:
+  name: nodejs
+  namespace: $FAAS_NAMESPACE
+spec:
+  image: ghcr.io/fission/node-env
+  poolsize: 3
 EOF
+    fi
     
-    # Python function
-    cat > functions/examples/hello-python.py << 'EOF'
-def main():
-    return {
-        "message": "Hello from Python!",
-        "timestamp": "2024-01-01T00:00:00Z"
-    }
-EOF
+    # Create sample functions if they exist
+    if [ -f "functions/hello-faas.js" ]; then
+        log_info "Creating hello-faas function..."
+        if ! kubectl get function hello-faas -n "$FAAS_NAMESPACE" &>/dev/null; then
+            fission function create --name hello-faas --env nodejs --code functions/hello-faas.js --namespace "$FAAS_NAMESPACE" || true
+        fi
+    fi
     
-    log_success "Sample functions created in functions/examples/"
+    if [ -f "functions/math-faas.js" ]; then
+        log_info "Creating math-faas function..."
+        if ! kubectl get function math-faas -n "$FAAS_NAMESPACE" &>/dev/null; then
+            fission function create --name math-faas --env nodejs --code functions/math-faas.js --namespace "$FAAS_NAMESPACE" || true
+        fi
+    fi
+    
+    log_success "Sample functions setup complete!"
 }
 
 # Display access information
 show_access_info() {
     log_success "Setup completed successfully!"
     echo
-    log_info "Access Information:"
+    log_info "🎯 Access Information:"
     echo "  🌐 Coder Code-Server: http://localhost:$CODER_PORT"
-    echo "  🔑 Password: coder"
+    echo "  🔑 Password: coder123"
     echo
-    log_info "Useful Commands:"
-    echo "  📦 List functions: kubectl exec -it -n $NAMESPACE deployment/coder-server -- fission function list"
-    echo "  🚀 Create function: kubectl exec -it -n $NAMESPACE deployment/coder-server -- fission function create ..."
-    echo "  📊 Get pods: kubectl get pods -n $NAMESPACE"
-    echo "  📝 View logs: kubectl logs -n $NAMESPACE deployment/coder-server"
+    log_info "🚀 Function Management (Professional CLI):"
+    echo "  📋 List functions: fission function list --namespace $FAAS_NAMESPACE"
+    echo "  ➕ Create function: fission function create --name <name> --env nodejs --code <file> --namespace $FAAS_NAMESPACE"
+    echo "  🧪 Test function: fission function test --name <name> --namespace $FAAS_NAMESPACE"
+    echo "  📦 List environments: fission env list --namespace $FAAS_NAMESPACE"
     echo
-    log_info "Example Functions:"
-    echo "  📁 Located in: functions/examples/"
-    echo "  🔧 Edit in Coder: http://localhost:$CODER_PORT"
+    log_info "🔍 Monitoring Commands:"
+    echo "  📊 Fission pods: kubectl get pods -n $NAMESPACE"
+    echo "  🏃 Function pods: kubectl get pods -n $FAAS_NAMESPACE"
+    echo "  📝 Router logs: kubectl logs -n $NAMESPACE deployment/router"
     echo
-    log_info "Next Steps:"
-    echo "  1. Open Coder in your browser"
-    echo "  2. Navigate to /home/coder/functions"
-    echo "  3. Create and deploy your functions!"
+    log_info "🧪 Test Your Setup:"
+    echo "  🚀 Run: ./scripts/test-faas-functions.sh"
+    echo
+    log_success "✅ Your portable faas namespace environment is ready!"
+    echo
+    log_warning "💡 Remember: Always use '--namespace $FAAS_NAMESPACE' with fission commands"
+    log_info "   This keeps your functions isolated and portable across environments."
 }
 
 # Main execution
 main() {
-    log_info "Starting Fission + Coder Development Environment Setup"
+    log_info "🚀 Starting Portable Fission + Coder Development Environment Setup"
+    log_info "   Using faas namespace for professional isolation"
     echo
     
     check_prerequisites
     create_cluster
     install_fission
+    configure_faas_namespace
     deploy_coder
-    create_samples
+    create_sample_functions
     show_access_info
 }
 

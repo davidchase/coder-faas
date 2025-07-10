@@ -1,0 +1,93 @@
+namespace: fission
+repository: "index.docker.io"
+image: fission/fission-bundle
+imageTag: "v1.21.0"
+pullPolicy: IfNotPresent
+
+fetcher:
+  image: fission/fetcher
+  imageTag: ""
+
+preUpgradeChecks:
+  enabled: true
+
+## Executor configuration for multiple namespaces
+executor:
+  enabled: true
+  adoptExistingResources: false
+  env:
+    # Configure executor to watch multiple namespaces
+    FISSION_RESOURCE_NAMESPACES: "default,faas"
+    FISSION_FUNCTION_NAMESPACE: "faas"
+    FISSION_BUILDER_NAMESPACE: "faas"
+    FISSION_DEFAULT_NAMESPACE: "default"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+## Router configuration for multiple namespaces  
+router:
+  enabled: true
+  env:
+    # Configure router to route to multiple namespaces
+    FISSION_RESOURCE_NAMESPACES: "default,faas"
+    FISSION_FUNCTION_NAMESPACE: "faas"
+    FISSION_BUILDER_NAMESPACE: "faas"
+    FISSION_DEFAULT_NAMESPACE: "default"
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+## Builder Manager configuration
+buildermgr:
+  enabled: true
+  env:
+    FISSION_RESOURCE_NAMESPACES: "default,faas"
+    FISSION_FUNCTION_NAMESPACE: "faas"
+    FISSION_BUILDER_NAMESPACE: "faas"
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+## Storage Service
+storagesvc:
+  enabled: true
+  
+## NATS Streaming (for async functions)
+nats:
+  enabled: true
+  authToken: "defaultFissionAuthToken"
+
+## Prometheus for metrics
+prometheus:
+  enabled: false
+
+## Log aggregation with fluentbit
+fluentbit:
+  enabled: false
+
+## Message Queue Trigger with KEDA
+mqt_keda:
+  enabled: true
+
+## Influx DB for logs
+influxdb:
+  enabled: false
+
+# Development-friendly settings
+analytics: false
+debugEnv: false
+pprof:
+  enabled: false 
