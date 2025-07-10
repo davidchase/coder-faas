@@ -30,7 +30,11 @@ A portable development environment that combines Fission (serverless functions) 
 
 2. **Deploy everything:**
    ```bash
+   # For macOS/Linux
    ./scripts/setup.sh
+   
+   # For WSL2/VDI environments (handles resource constraints)
+   ./scripts/setup-wsl2.sh
    ```
 
 3. **Access your environment:**
@@ -102,11 +106,19 @@ The setup includes:
 
 ## 📝 Available Scripts
 
-- `./scripts/setup.sh` - Complete environment setup
+- `./scripts/setup.sh` - Complete environment setup (macOS/Linux)
+- `./scripts/setup-wsl2.sh` - WSL2/VDI optimized setup with extended timeouts
 - `./scripts/cleanup.sh` - Clean teardown
 - `./scripts/port-forward.sh` - Start port forwarding for coder-server
+- `./scripts/test-faas-functions.sh` - Test faas namespace functions
 
 ## 🐛 Troubleshooting
+
+### WSL2/VDI Issues
+If you encounter timeouts or installation failures in WSL2/VDI:
+- Use `./scripts/setup-wsl2.sh` instead of `setup.sh`
+- See `docs/WSL2-TROUBLESHOOTING.md` for detailed solutions
+- Increase WSL2 memory allocation in `.wslconfig`
 
 ### Port Forwarding Issues
 If port forwarding stops working:
