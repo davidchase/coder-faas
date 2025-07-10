@@ -1,0 +1,190 @@
+---
+# RBAC Configuration for faas namespace
+# This allows Fission to create and manage functions in the faas namespace
+
+# Create ClusterRole for faas namespace operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fission-faas-namespace
+rules:
+# Core Kubernetes resources
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "serviceaccounts"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch"]
+
+# Apps resources
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Extensions resources
+- apiGroups: ["extensions"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Fission CRDs
+- apiGroups: ["fission.io"]
+  resources: ["*"]
+  verbs: ["*"]
+
+# RBAC resources
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["rolebindings", "clusterrolebindings"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# Bind ClusterRole to fission-controller in faas namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fission-controller-faas-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fission-faas-namespace
+subjects:
+- kind: ServiceAccount
+  name: fission-controller
+  namespace: fission
+
+---
+# Bind ClusterRole to fission-executor in faas namespace  
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fission-executor-faas-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fission-faas-namespace
+subjects:
+- kind: ServiceAccount
+  name: fission-executor
+  namespace: fission
+
+---
+# Bind ClusterRole to fission-router in faas namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fission-router-faas-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fission-faas-namespace
+subjects:
+- kind: ServiceAccount
+  name: fission-router
+  namespace: fission
+
+---
+# Bind ClusterRole to fission-buildermgr in faas namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fission-buildermgr-faas-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fission-faas-namespace
+subjects:
+- kind: ServiceAccount
+  name: fission-buildermgr
+  namespace: fission
+
+---
+# Create fission-fetcher service account in faas namespace
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fission-fetcher
+  namespace: faas
+  labels:
+    svc: fission-fetcher
+
+---
+# Create ClusterRole for fission-fetcher
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fission-fetcher-faas
+rules:
+# Core Kubernetes resources needed by fetcher
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch", "create", "patch"]
+
+# Fission CRDs - fetcher needs to access packages and functions
+- apiGroups: ["fission.io"]
+  resources: ["packages", "functions", "environments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# Bind fission-fetcher ClusterRole to fission-fetcher service account in faas namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fission-fetcher-faas-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fission-fetcher-faas
+subjects:
+- kind: ServiceAccount
+  name: fission-fetcher
+  namespace: faas
+
+---
+# Create fission-builder service account in faas namespace
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fission-builder
+  namespace: faas
+  labels:
+    svc: fission-builder
+
+---
+# Create ClusterRole for fission-builder
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fission-builder-faas
+rules:
+# Core Kubernetes resources needed by builder
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch", "create", "patch"]
+
+# Fission CRDs - builder needs to access packages and environments
+- apiGroups: ["fission.io"]
+  resources: ["packages", "functions", "environments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# Bind fission-builder ClusterRole to fission-builder service account in faas namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fission-builder-faas-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fission-builder-faas
+subjects:
+- kind: ServiceAccount
+  name: fission-builder
+  namespace: faas 

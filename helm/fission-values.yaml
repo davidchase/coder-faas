@@ -1,0 +1,59 @@
+# Fission Helm Values for Portable Development Environment
+# Simple configuration focused on multi-namespace support
+
+# Basic settings
+analytics: false
+debugEnv: false
+pruneInterval: 60
+
+# Enable multi-namespace resource watching
+# This allows Fission to monitor functions in multiple namespaces
+defaultNamespace: default
+
+# Repository and image settings using standard values
+repository: https://fission.github.io/fission-charts/
+
+# Global image settings
+image:
+  tag: v1.21.0
+  pullPolicy: IfNotPresent
+
+# Executor configuration
+executor:
+  adoptExistingResources: false
+
+# Router configuration  
+router:
+  replicas: 1
+
+# Controller configuration
+controller:
+  replicas: 1
+
+# Storage settings
+storageServiceType: ClusterIP
+serviceType: ClusterIP
+
+# Resource limits
+resources:
+  controller:
+    cpu: 100m
+    memory: 256Mi
+  router:
+    cpu: 100m  
+    memory: 128Mi
+  executor:
+    cpu: 100m
+    memory: 128Mi
+
+# Pre-installed environments for immediate use
+preUpgradeChecksImage:
+  repository: fission/pre-upgrade-checks
+  tag: v1.21.0
+
+# Node environments
+nodeenv:
+  image: fission/node-env:v1.20.5
+  
+pythonenv:
+  image: fission/python-env:v1.20.5 
